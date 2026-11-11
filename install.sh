@@ -8,6 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="$SCRIPT_DIR/build"
 DRIVER_SO="$BUILD_DIR/driver/libfprint-2-tod-1-broadcom.so"
 FW_DIR_SRC="$BUILD_DIR/firmware"
+PKG_DIR="$BUILD_DIR/packages"
 RULES_DIR="$SCRIPT_DIR/rules"
 
 log_info()    { echo -e "\033[1;34m[*]\033[0m $*"; }
@@ -33,13 +34,37 @@ fi
 # Check architecture
 [[ "$(uname -m)" == "x86_64" ]] || { log_err "Broadcom driver requires x86_64 (detected: $(uname -m))"; exit 1; }
 
-# Step 1: Ensure TOD-enabled libfprint is installed
+# Step 1: Ensure TOD-enabled libfprint is installed & pin it
 log_info "Step 1/5: Checking for TOD-enabled libfprint runtime..."
-if command -v apt-get >/dev/null; then
-    if ! dpkg -l | grep -q "libfprint-2-tod1"; then
-        log_info "Installing libfprint-2-tod1 and fprintd via apt..."
+if command -v dpkg >/dev/null; then
+    # Remove conflicting dev headers if present
+    if dpkg -l | grep -q "libfprint-2-dev"; then
+        log_warn "Removing conflicting libfprint-2-dev package..."
+        apt-get remove -y libfprint-2-dev >/dev/null 2>&1 || true
+    fi
+
+    # Install offline deb packages if available in build/packages
+    if compgen -G "$PKG_DIR/*.deb" >/dev/null; then
+        log_info "Installing TOD packages from $PKG_DIR..."
+        dpkg -i --force-depends "$PKG_DIR"/*.deb 2>/dev/null || true
+        if command -v apt-get >/dev/null; then
+            apt-get install -f -y >/dev/null 2>&1 || true
+        fi
+    elif command -v apt-get >/dev/null; then
         apt-get update -qq || true
-        apt-get install -y libfprint-2-tod1 fprintd libpam-fprintd || true
+        apt-get install -y libfprint-2-tod1 fprintd libpam-fprintd 2>/dev/null || true
+    fi
+
+    # Ensure fprintd is installed
+    if ! command -v fprintd-enroll >/dev/null && command -v apt-get >/dev/null; then
+        apt-get update -qq || true
+        apt-get install -y fprintd libpam-fprintd || true
+    fi
+
+    # Crucial: Pin TOD packages to prevent apt upgrade from removing them
+    if command -v apt-mark >/dev/null; then
+        apt-mark hold libfprint-2-tod1 libfprint-2-2 >/dev/null 2>&1 || true
+        log_success "Locked libfprint-2-tod1 and libfprint-2-2 with 'apt-mark hold' (safe from apt upgrade)."
     fi
 elif command -v zypper >/dev/null; then
     zypper install -y libfprint-2-tod1 fprintd pam_fprintd || true
@@ -104,4 +129,3 @@ echo "  1. Enroll:  fprintd-enroll"
 echo "  2. Verify:  fprintd-verify"
 echo "  3. Enable:  sudo pam-auth-update (check [*] Fingerprint authentication)"
 echo
-

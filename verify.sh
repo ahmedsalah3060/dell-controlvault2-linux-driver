@@ -50,6 +50,17 @@ if [[ $TOD_LIB_FOUND -eq 0 ]]; then
     echo -e "${YELLOW}[WARN]${NC} libfprint-2-tod runtime library not found in standard paths."
 fi
 
+section "APT Package Hold Status"
+if command -v apt-mark >/dev/null; then
+    holds="$(apt-mark showhold | grep -E 'libfprint' || true)"
+    if [[ -n "$holds" ]]; then
+        echo -e "${GREEN}[OK]${NC} TOD packages locked with apt-mark hold (protected from apt upgrades):"
+        echo "$holds" | sed 's/^/     /'
+    else
+        echo -e "${YELLOW}[WARN]${NC} Packages not on hold. Run: sudo apt-mark hold libfprint-2-tod1 libfprint-2-2"
+    fi
+fi
+
 section "Broadcom Driver Binary Check"
 DRIVER_FOUND=0
 for tod_path in /usr/lib/x86_64-linux-gnu/libfprint-2/tod-1 \
@@ -86,7 +97,7 @@ else
 fi
 
 if [[ -f /etc/polkit-1/rules.d/50-fprintd.rules ]]; then
-    echo -e "${GREEN}[OK]${NC} Polkit rule present: /etc/polkit-1/rules.d/50-fprintd.rules"
+    echo -e "${GREEN}[OK]${NC} Polkit rule present: /etc/polkit-1/rules.d/50-fprintd.rules (AUTH_ADMIN default)"
 else
     echo -e "${YELLOW}[WARN]${NC} Polkit authorization rule missing (/etc/polkit-1/rules.d/50-fprintd.rules)."
 fi

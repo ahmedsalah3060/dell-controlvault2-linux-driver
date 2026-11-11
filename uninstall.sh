@@ -25,6 +25,12 @@ echo "[*] Removing udev and Polkit rules..."
 rm -f /etc/udev/rules.d/61-broadcom-cv2-5834.rules
 rm -f /etc/polkit-1/rules.d/50-fprintd.rules
 
+# Release apt package hold if active
+if command -v apt-mark >/dev/null; then
+    echo "[*] Releasing package hold on libfprint packages..."
+    apt-mark unhold libfprint-2-tod1 libfprint-2-2 2>/dev/null || true
+fi
+
 # Reload rules and restart daemon
 udevadm control --reload-rules 2>/dev/null || true
 systemctl restart fprintd 2>/dev/null || true
@@ -32,4 +38,3 @@ systemctl restart fprintd 2>/dev/null || true
 echo "[✓] Uninstallation complete."
 echo "Note: Firmware files in /var/lib/fprint/fw/ were kept. Delete manually if needed:"
 echo "      sudo rm -rf /var/lib/fprint/fw"
-
