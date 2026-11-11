@@ -27,7 +27,7 @@ Works on all Dell laptops and mobile workstations featuring the Broadcom Control
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/<your-username>/dell-controlvault2-linux-driver.git
+git clone https://github.com/ahmedsalah3060/dell-controlvault2-linux-driver.git
 cd dell-controlvault2-linux-driver
 ```
 
