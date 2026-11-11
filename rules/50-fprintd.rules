@@ -1,0 +1,6 @@
+// Require administrative (root/sudo) authentication before enrolling fingerprint hardware
+polkit.addRule(function(action, subject) {
+    if (action.id.indexOf("net.reactivated.fprint.device.enroll") === 0) {
+        return polkit.Result.AUTH_ADMIN; // يطلب باسورد الـ Root دائماً قبل فتح الحساس
+    }
+});

@@ -1,0 +1,38 @@
+# ==============================================================================
+# Git Ignore for Dell ControlVault 2 Linux Driver Repository
+# Strictly exclude all proprietary binaries and build artifacts
+# ==============================================================================
+
+# Build artifacts and local drivers
+build/
+dist/
+prebuilt/
+*.so
+*.so.*
+
+# Firmware blobs
+firmware/
+*.bin
+*.otp
+*.pem
+*.sbi
+
+# Downloaded packages and tarballs
+*.deb
+*.rpm
+*.tgz
+*.tar.gz
+*.tar.xz
+*.zip
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+
