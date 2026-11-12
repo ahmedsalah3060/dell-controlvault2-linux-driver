@@ -109,6 +109,8 @@ if [[ -f "$DL_DIR/tod1.deb" && -f "$DL_DIR/libfprint2.deb" ]] && command -v dpkg
     if [[ -f "$DL_DIR/tod1_pkg/DEBIAN/control" && -f "$DL_DIR/fprint2_pkg/DEBIAN/control" ]]; then
         sed -i 's/^Version: .*/Version: 1:1.94.10+tod1-1/' "$DL_DIR/tod1_pkg/DEBIAN/control"
         sed -i 's/^Version: .*/Version: 1:1.94.10+tod1-1/' "$DL_DIR/fprint2_pkg/DEBIAN/control"
+        sed -i 's/libgusb2 (>= 0.3.3)/libgusb2a (>= 0.3.3) | libgusb2 (>= 0.3.3)/' "$DL_DIR/fprint2_pkg/DEBIAN/control"
+        sed -i 's/libgusb2 (>= 0.2.4)/libgusb2a (>= 0.2.4) | libgusb2 (>= 0.2.4)/' "$DL_DIR/tod1_pkg/DEBIAN/control"
         dpkg-deb --root-owner-group -b -Zxz "$DL_DIR/tod1_pkg" "$BUILD_DIR/packages/libfprint-2-tod1_1.94.10+tod1-1_amd64.deb" >/dev/null 2>&1 || true
         dpkg-deb --root-owner-group -b -Zxz "$DL_DIR/fprint2_pkg" "$BUILD_DIR/packages/libfprint-2-2_1.94.10+tod1-1_amd64.deb" >/dev/null 2>&1 || true
         log_ok "TOD packages prepared with version 1:1.94.10+tod1-1 in build/packages/"
