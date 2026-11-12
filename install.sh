@@ -34,18 +34,23 @@ fi
 # Check architecture
 [[ "$(uname -m)" == "x86_64" ]] || { log_err "Broadcom driver requires x86_64 (detected: $(uname -m))"; exit 1; }
 
-# Step 1: Ensure TOD-enabled libfprint is installed & pin it
+# Step 1: Ensure TOD-enabled libfprint is installed
 log_info "Step 1/5: Checking for TOD-enabled libfprint runtime..."
 if command -v dpkg >/dev/null; then
+    # Unhold packages if previously locked so apt doesn't complain about held packages
+    if command -v apt-mark >/dev/null; then
+        apt-mark unhold libfprint-2-tod1 libfprint-2-2 >/dev/null 2>&1 || true
+    fi
+
     # Remove conflicting dev headers if present
     if dpkg -l | grep -q "libfprint-2-dev"; then
         log_warn "Removing conflicting libfprint-2-dev package..."
         apt-get remove -y libfprint-2-dev >/dev/null 2>&1 || true
     fi
 
-    # Install offline deb packages if available in build/packages
+    # Install updated deb packages if available in build/packages
     if compgen -G "$PKG_DIR/*.deb" >/dev/null; then
-        log_info "Installing TOD packages from $PKG_DIR..."
+        log_info "Installing updated TOD packages (v1:1.94.10+tod1-1)..."
         dpkg -i --force-depends "$PKG_DIR"/*.deb 2>/dev/null || true
         if command -v apt-get >/dev/null; then
             apt-get install -f -y >/dev/null 2>&1 || true
@@ -55,16 +60,9 @@ if command -v dpkg >/dev/null; then
         apt-get install -y libfprint-2-tod1 fprintd libpam-fprintd 2>/dev/null || true
     fi
 
-    # Ensure fprintd is installed
-    if ! command -v fprintd-enroll >/dev/null && command -v apt-get >/dev/null; then
-        apt-get update -qq || true
-        apt-get install -y fprintd libpam-fprintd || true
-    fi
-
-    # Crucial: Pin TOD packages to prevent apt upgrade from removing them
-    if command -v apt-mark >/dev/null; then
-        apt-mark hold libfprint-2-tod1 libfprint-2-2 >/dev/null 2>&1 || true
-        log_success "Locked libfprint-2-tod1 and libfprint-2-2 with 'apt-mark hold' (safe from apt upgrade)."
+    # Ensure fprintd is cleanly installed
+    if command -v apt-get >/dev/null; then
+        apt-get install -y fprintd libpam-fprintd >/dev/null 2>&1 || true
     fi
 elif command -v zypper >/dev/null; then
     zypper install -y libfprint-2-tod1 fprintd pam_fprintd || true

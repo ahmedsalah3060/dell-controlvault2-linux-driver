@@ -90,14 +90,29 @@ if [[ -n "$FW_SRC_DIR" && -d "$FW_SRC_DIR" ]]; then
     log_ok "Firmware files extracted to build/firmware/"
 fi
 
-# Step 5: Download TOD framework deb packages for Debian/Kali/Ubuntu
-log_info "Step 5/5: Fetching TOD framework packages for Debian / Kali / Ubuntu..."
+# Step 5: Download TOD framework deb packages for Debian/Kali/Ubuntu and adjust version to 1:1.94.10+tod1-1
+log_info "Step 5/5: Preparing updated TOD framework packages (v1:1.94.10+tod1-1)..."
+DL_DIR="$WORK_DIR/dl_debs"
+mkdir -p "$DL_DIR"
+
 if command -v curl >/dev/null; then
-    curl -fsSL "$TOD_DEB_URL" -o "$BUILD_DIR/packages/libfprint-2-tod1_1.94.9+tod1-1build1_amd64.deb" 2>/dev/null || true
-    curl -fsSL "$LIBFPRINT_DEB_URL" -o "$BUILD_DIR/packages/libfprint-2-2_1.94.9+tod1-1build1_amd64.deb" 2>/dev/null || true
+    curl -fsSL "$TOD_DEB_URL" -o "$DL_DIR/tod1.deb" 2>/dev/null || true
+    curl -fsSL "$LIBFPRINT_DEB_URL" -o "$DL_DIR/libfprint2.deb" 2>/dev/null || true
 elif command -v wget >/dev/null; then
-    wget -q "$TOD_DEB_URL" -O "$BUILD_DIR/packages/libfprint-2-tod1_1.94.9+tod1-1build1_amd64.deb" 2>/dev/null || true
-    wget -q "$LIBFPRINT_DEB_URL" -O "$BUILD_DIR/packages/libfprint-2-2_1.94.9+tod1-1build1_amd64.deb" 2>/dev/null || true
+    wget -q "$TOD_DEB_URL" -O "$DL_DIR/tod1.deb" 2>/dev/null || true
+    wget -q "$LIBFPRINT_DEB_URL" -O "$DL_DIR/libfprint2.deb" 2>/dev/null || true
+fi
+
+if [[ -f "$DL_DIR/tod1.deb" && -f "$DL_DIR/libfprint2.deb" ]] && command -v dpkg-deb >/dev/null; then
+    dpkg-deb -R "$DL_DIR/tod1.deb" "$DL_DIR/tod1_pkg" 2>/dev/null || true
+    dpkg-deb -R "$DL_DIR/libfprint2.deb" "$DL_DIR/fprint2_pkg" 2>/dev/null || true
+    if [[ -f "$DL_DIR/tod1_pkg/DEBIAN/control" && -f "$DL_DIR/fprint2_pkg/DEBIAN/control" ]]; then
+        sed -i 's/^Version: .*/Version: 1:1.94.10+tod1-1/' "$DL_DIR/tod1_pkg/DEBIAN/control"
+        sed -i 's/^Version: .*/Version: 1:1.94.10+tod1-1/' "$DL_DIR/fprint2_pkg/DEBIAN/control"
+        dpkg-deb --root-owner-group -b -Zxz "$DL_DIR/tod1_pkg" "$BUILD_DIR/packages/libfprint-2-tod1_1.94.10+tod1-1_amd64.deb" >/dev/null 2>&1 || true
+        dpkg-deb --root-owner-group -b -Zxz "$DL_DIR/fprint2_pkg" "$BUILD_DIR/packages/libfprint-2-2_1.94.10+tod1-1_amd64.deb" >/dev/null 2>&1 || true
+        log_ok "TOD packages prepared with version 1:1.94.10+tod1-1 in build/packages/"
+    fi
 fi
 
 echo
